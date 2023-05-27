@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+    <html>
+        <head>
+            <title>ChatApplication</title>
+        </head>
+
+        <script src="/socket.io/socket.io.js"></script>
+
+        <link rel="stylesheet" type="text/css" href="CSSstylesheet.css">
+
+        <script src="/socket.io/socket.io.js"></script>
+
+        <body>
+            <!--  user input his name or id -->
+            <div id="username-box"> 
+                <input type="text" id="username-input" name="username" placeholder="please enter your username">
+                <button id="username-submit">enter</button>
+            </div>
+                 <!-- list to show if someone is typing -->
+                <ul id="user-list"></ul> 
+
+            <div class="container">
+                <div class="navbar">
+                    <a class="hover"  href="Introduction.html">Introduction</a>
+                    <a class="hover"  href="About.html">About</a>
+                    <a class="active" href="ChatApplication.html">Chat Application</a>
+                </div>
+                <!-- the table for user to chat with other -->
+                <table id="chattable"> 
+                    <tr>
+                        <td><ul id="chatlist"></ul></td>
+                    </tr>
+                    <tr>
+                        <td><ul id="statuslist"></ul></td>
+                    </tr>
+                    <tr>
+                        <td><div id="input-box">
+                                <input type="text" id="inputchatcontent" name="inputchatcontent" warp="soft" >
+                                <input type="submit" id="sendbtn" name="sendbtn" value="send">
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <script>
+
+                var socket = io();
+                var list = document.getElementById('list'); 
+                var chatlist = document.getElementById('chatlist');
+                var sendbtn = document.getElementById('sendbtn');
+                var inputchatcontent = document.getElementById('inputchatcontent');
+                var usernamebox = document.getElementById('username-box');
+                var usernameinput = document.getElementById('username-input');
+                var usernamesubmit = document.getElementById('username-submit');
+
+                usernamesubmit.addEventListener('click', () => {
+                    var username = usernameinput.value;
+                    if (username.trim() !== '') {
+                        socket.emit('username', username);
+                        usernamebox.style.display = 'none'; // Hide the user name input box
+                    }
+                    else {
+                        // Shake username-input box
+                        usernameinput.classList.add('shake');
+                        setTimeout(() => {
+                            usernameinput.classList.remove('shake');
+                        }, 500);
+                        // Show warning message
+                        var warning = document.createElement('div');
+                        warning.classList.add('warning');
+                        warning.textContent = 'The username cannot be empty!';
+                        usernamebox.appendChild(warning);
+                        //remove the message after some time
+                        setTimeout(() => {
+                            warning.remove();
+                        }, 2000);
+                    }
+                });
+
+                socket.on('message', (msg) => {
+                    var item = document.createElement('msg')
+                    item.textContent = msg;
+                    chatlist.appendChild(item)
+                    
+                });
+
+                inputchatcontent.addEventListener('keyup', () => {
+                    socket.emit('typing');
+                });
+
+                sendbtn.addEventListener('click', (msg) => {
+                    msg.preventDefault(); // Block default form submission behavior
+                    var content = inputchatcontent.value;
+                    if (content.trim() !== '') {
+                        socket.emit('chatmessage', content);
+                        inputchatcontent.value = ''; // Clear Input Box
+                    }
+                    else {
+                        // Show warning message
+                        var warning = document.createElement('div');
+                        warning.classList.add('warning');
+                        warning.textContent = 'The message cannot be empty!';
+                        statuslist.parentElement.appendChild(warning);
+                        //remove the message after some time
+                        setTimeout(() => {
+                            warning.remove();
+                        }, 2000);
+                    }
+                });
+
+
+                socket.on('chatmessage', (msg) => {
+                    var item = document.createElement('li')
+                    item.textContent = msg;
+                    chatlist.appendChild(item)
+                })
+
+                socket.on('user-list', (users) => {
+                    var list = document.getElementById('user-list');
+                    list.innerHTML = '';//Clear the contents of the original list
+                    users.forEach((user) => {
+                        var item = document.createElement('li');
+                        item.textContent = user;
+                        list.insertBefore(item, list.firstChild);
+                    });
+                });
+                // get the message that somebody is typing
+                socket.on('typing', (msg) => {
+                    var item = document.createElement('li')
+                    item.textContent = msg;
+                    statuslist.appendChild(item)
+                    //remove the message after some time
+                    setTimeout(() => {
+                        item.remove();
+                    }, 2000);
+                });
+
+            </script>
+
+        </body>
+
+    </html>
